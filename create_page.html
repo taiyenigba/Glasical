@@ -1,0 +1,94 @@
+<?php
+session_start();
+
+// Redirect user to login page if not logged in
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
+    exit();
+}
+
+// Fetch page titles from the database
+try {
+    $pdo = new PDO('mysql:host=localhost;dbname=glacialblades', 'username', 'password');
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    $stmt = $pdo->prepare("SELECT page_id, title FROM pages");
+    $stmt->execute();
+    $pages = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    echo "Connection failed: " . $e->getMessage();
+}
+?>
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create New Page - GlacialBlades CMS</title>
+</head>
+<body>
+
+<header>
+    <nav>
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="about.html">About Us</a></li>
+            <!-- Dynamically generated links to all available pages -->
+            <?php foreach ($pages as $page): ?>
+                <li><a href="view_page.php?id=<?php echo $page['page_id']; ?>"><?php echo $page['title']; ?></a></li>
+            <?php endforeach; ?>
+            <!-- Remaining menu items based on user authentication -->
+            <li><a href="teams.html">Teams</a></li>
+            <li><a href="players.html">Players</a></li>
+            <li><a href="matches.html">Matches</a></li>
+            <li><a href="contact.html">Contact Us</a></li>
+            <li><a href="comments.html">Comments</a></li>
+            <?php if(isset($_SESSION['user_id'])) { ?>
+                <li><a href="create_page.php">Create New Page</a></li>
+                <li><a href="view_pages.php">View Pages</a></li>
+                <li><a href="edit_page.php?id=1">Edit Page</a></li>
+                <li><a href="delete_page.php">Delete Page</a></li>
+                <li><a href="logout.php">Logout</a></li>
+            <?php } else { ?>
+                <li><a href="login.php">Login</a></li>
+                <li><a href="register.php">Register</a></li>
+            <?php } ?>
+        </ul>
+    </nav>
+</header>
+
+<main>
+    <h1>Create New Page</h1>
+    <form action="insert_page.php" method="POST">
+        <label for="title">Title:</label><br>
+        <input type="text" id="title" name="title" required><br><br>
+        <label for="content">Content:</label><br>
+        <textarea id="content" name="content" rows="4" cols="50" required></textarea><br><br>
+        <input type="submit" value="Create">
+    </form>
+</main>
+
+</body>
+</html>
+
+<?php 
+// Check if the user is logged in
+if (isset($_SESSION['user_id'])) {
+    // If the user is logged in, check their role
+    if ($_SESSION['role'] == 'admin') {
+        // Display admin-specific links
+        echo '<li><a href="create_page.html">Create New Page</a></li>';
+        echo '<li><a href="view_pages.php">View Pages</a></li>';
+        echo '<li><a href="edit_page.php">Edit Page</a></li>';
+        echo '<li><a href="delete_page.php">Delete Page</a></li>';
+    }
+    // Display logout link
+    echo '<li><a href="logout.php">Logout</a></li>';
+} else {
+    // Display login and register links for non-logged-in users
+    echo '<li><a href="login.php">Login</a></li>';
+    echo '<li><a href="register.php">Register</a></li>';
+}
+?>
